@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BacaCermat AI - Detektor Pelafalan Membaca Anak SD</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Inter & Fredoka untuk nuansa edukatif ramah anak -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Tone.js untuk Sound Effect & Musik Ceria tanpa URL eksternal -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fefce8;
+            background-image: 
+                radial-gradient(#fde047 1.25px, transparent 1.25px),
+                radial-gradient(#bae6fd 1.25px, #fefce8 1.25px);
+            background-size: 32px 32px;
+            background-position: 0 0, 16px 16px;
+        }
+        .font-display {
+            font-family: 'Fredoka', sans-serif;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 0.3; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .recording-pulse {
+            animation: pulse-ring 1.5s infinite ease-in-out;
+        }
+        @keyframes float-slow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-6px) rotate(2deg); }
+        }
+        .animate-float {
+            animation: float-slow 3.5s ease-in-out infinite;
+        }
+        @keyframes pop-in-spring {
+            0% { opacity: 0; transform: scale(0.82) translateY(18px); }
+            65% { opacity: 1; transform: scale(1.03) translateY(-3px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-praise-pop {
+            animation: pop-in-spring 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        @keyframes wiggle-star {
+            0%, 100% { transform: rotate(-8deg) scale(1); }
+            50% { transform: rotate(10deg) scale(1.15); }
+        }
+        .animate-star {
+            animation: wiggle-star 1.8s ease-in-out infinite;
+        }
+        .kid-card {
+            box-shadow: 0 8px 0 rgba(99, 102, 241, 0.12), 0 14px 28px -8px rgba(15, 23, 42, 0.08);
+        }
+        .kid-btn {
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.15);
+            transition: all 0.15s ease;
+        }
+        .kid-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.15);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #fef9c3;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #93c5fd;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #60a5fa;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Header / Navbar -->
+    <header class="bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500 border-b-4 border-indigo-700/30 sticky top-0 z-30 shadow-md text-white">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 h-18 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-amber-300 text-indigo-900 flex items-center justify-center shadow-md border-2 border-white animate-float">
+                    <i data-lucide="book-open-check" class="w-7 h-7"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-display text-xl sm:text-2xl font-bold text-white tracking-tight leading-none drop-shadow-sm">BacaCermat <span class="text-amber-300">AI</span></h1>
+                        <span class="hidden sm:inline-block text-[11px] font-display font-bold bg-white/20 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-amber-200">Sahabat Belajar SD ✨</span>
+                    </div>
+                    <p class="text-xs text-sky-100 font-medium mt-1">Belajar Membaca Lantang & Ceria Bersama Guru AI</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="toggleSoundEffects()" id="btnToggleSfx" title="Aktifkan/Matikan Efek Suara" class="kid-btn flex items-center justify-center text-indigo-900 bg-white hover:bg-sky-50 p-2.5 rounded-2xl border-2 border-sky-200">
+                    <i id="sfxIcon" data-lucide="volume-2" class="w-4 h-4 text-indigo-600"></i>
+                </button>
+                <button onclick="toggleGuideModal()" class="kid-btn flex items-center gap-1.5 text-xs sm:text-sm font-display font-bold text-indigo-900 bg-amber-300 hover:bg-amber-200 px-4 py-2.5 rounded-2xl border-2 border-white">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-indigo-700"></i>
+                    <span class="hidden sm:inline">Panduan Fonetik</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-7">
+
+        <!-- Alert / Notification Box -->
+        <div id="alertBox" class="hidden rounded-2xl p-4 border flex items-start gap-3 transition-all">
+            <i id="alertIcon" data-lucide="alert-circle" class="w-5 h-5 shrink-0 mt-0.5"></i>
+            <div class="flex-1 text-sm" id="alertMessage"></div>
+            <button onclick="hideAlert()" class="text-slate-400 hover:text-slate-600">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Step 1: Pilih atau Buat Teks Bacaan -->
+        <section class="bg-white rounded-[2rem] p-5 sm:p-7 border-4 border-sky-200 kid-card relative overflow-hidden">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div>
+                    <span class="inline-flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-sky-700 bg-sky-100 px-3 py-1.5 rounded-full mb-1.5 border border-sky-200">
+                        <i data-lucide="book-open" class="w-3.5 h-3.5"></i> Langkah 1 • Pilih Cerita Bacaan
+                    </span>
+                    <h2 class="font-display text-lg sm:text-xl font-bold text-slate-900">Ayo Pilih Latihan atau Tulis Kalimatmu! 📖</h2>
+                </div>
+                
+                <!-- Preset Selector -->
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="selectPreset('diftong')" id="btn-diftong" class="preset-btn kid-btn font-display text-xs font-bold px-3.5 py-2 rounded-2xl border-2 transition bg-indigo-600 text-white border-indigo-700">
+                        🌊 Diftong
+                    </button>
+                    <button onclick="selectPreset('digraf')" id="btn-digraf" class="preset-btn kid-btn font-display text-xs font-bold px-3.5 py-2 rounded-2xl border-2 transition bg-white text-slate-700 border-slate-200 hover:bg-sky-50">
+                        🐝 Digraf
+                    </button>
+                    <button onclick="selectPreset('klaster')" id="btn-klaster" class="preset-btn kid-btn font-display text-xs font-bold px-3.5 py-2 rounded-2xl border-2 transition bg-white text-slate-700 border-slate-200 hover:bg-sky-50">
+                        🚜 Klaster
+                    </button>
+                    <button onclick="selectPreset('paragog_substitusi')" id="btn-paragog_substitusi" class="preset-btn kid-btn font-display text-xs font-bold px-3.5 py-2 rounded-2xl border-2 transition bg-white text-slate-700 border-slate-200 hover:bg-sky-50">
+                        🎯 Bunyi e, -k & ny-
+                    </button>
+                    <button onclick="selectPreset('cerita_panjang')" id="btn-cerita_panjang" class="preset-btn kid-btn font-display text-xs font-bold px-3.5 py-2 rounded-2xl border-2 transition bg-white text-slate-700 border-slate-200 hover:bg-sky-50">
+                        🏆 Cerita 100+ Kata
+                    </button>
+                </div>
+            </div>
+
+            <!-- Info Fokus Fonetik Modul -->
+            <div id="moduleInfo" class="bg-amber-100/80 border-2 border-amber-300 rounded-2xl p-3.5 mb-4 flex items-start gap-3">
+                <div class="p-2 bg-amber-300 text-amber-900 rounded-xl shrink-0 shadow-sm">
+                    <i data-lucide="lightbulb" class="w-4 h-4"></i>
+                </div>
+                <div class="text-xs sm:text-sm text-amber-950">
+                    <p class="font-display font-bold" id="moduleTitle">Fokus Diftong (ai, au, oi, ei):</p>
+                    <p class="text-amber-900 mt-0.5" id="moduleDesc">Anak SD sering melafalkan diftong menjadi vokal tunggal (misal: "pantai" dibaca "pante", "harimau" dibaca "harimo").</p>
+                </div>
+            </div>
+
+            <!-- Area Teks Bacaan Besar (Ramah Anak SD) -->
+            <div class="relative">
+                <label for="targetText" class="sr-only">Teks yang akan dibaca anak</label>
+                <textarea id="targetText" rows="5" 
+                    oninput="updateWordCount()"
+                    class="w-full text-lg sm:text-xl font-display font-medium text-slate-800 bg-sky-50/60 border-3 border-2 border-sky-200 focus:border-indigo-500 focus:bg-white rounded-3xl p-4 sm:p-5 leading-relaxed tracking-wide transition resize-y focus:outline-none shadow-inner"
+                    placeholder="Ketik kalimat atau cerita bacaan anak di sini (mendukung hingga 100+ kata)..."></textarea>
+                
+                <div class="flex flex-wrap items-center justify-between gap-2 mt-3.5">
+                    <div class="flex flex-wrap items-center gap-2.5 text-xs text-slate-600">
+                        <span class="inline-flex items-center gap-1.5 font-display font-bold text-indigo-700 bg-indigo-100 px-3 py-1.5 rounded-full border border-indigo-200">
+                            <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                            <span id="wordCountBadge">0 Kata</span>
+                        </span>
+                        <span class="flex items-center gap-1 font-medium text-slate-500">
+                            <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i>
+                            <span>Siap mendeteksi bacaan pendek maupun 100+ kata!</span>
+                        </span>
+                    </div>
+                    <button onclick="speakTargetText()" id="btnSpeakSample" class="kid-btn inline-flex items-center gap-1.5 font-display text-xs font-bold text-sky-900 bg-sky-200 hover:bg-sky-300 px-4 py-2.5 rounded-2xl border border-sky-300">
+                        <i data-lucide="volume-2" class="w-4 h-4 text-sky-700"></i>
+                        Dengarkan Contoh Suara
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step 2: Perekam Suara & Visualizer -->
+        <section class="bg-white rounded-[2rem] p-5 sm:p-7 border-4 border-emerald-200 kid-card">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
+                <div>
+                    <span class="inline-flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-3 py-1.5 rounded-full mb-1.5 border border-emerald-200">
+                        <i data-lucide="mic" class="w-3.5 h-3.5"></i> Langkah 2 • Rekam Suaramu
+                    </span>
+                    <h2 class="font-display text-lg sm:text-xl font-bold text-slate-900">Baca Teks di Atas dengan Suara Lantang! 🎙️</h2>
+                </div>
+                <div class="text-xs font-display font-bold text-rose-700 bg-rose-100 border border-rose-200 px-3.5 py-2 rounded-full flex items-center gap-1.5 self-start sm:self-auto">
+                    <i data-lucide="heart" class="w-4 h-4 text-rose-500 fill-current"></i>
+                    <span>Mengeja pelan-pelan boleh kok!</span>
+                </div>
+            </div>
+
+            <!-- Visualizer & Controls Box -->
+            <div class="bg-gradient-to-b from-indigo-900 via-indigo-950 to-slate-900 rounded-3xl p-5 sm:p-6 text-white flex flex-col items-center justify-center relative overflow-hidden border-4 border-indigo-300/40 shadow-inner">
+                <!-- Canvas Audio Waveform -->
+                <canvas id="audioVisualizer" class="w-full h-24 rounded-2xl mb-4 bg-indigo-950/80 border border-indigo-500/30"></canvas>
+
+                <!-- Timer & Status -->
+                <div class="flex items-center gap-3 mb-5 bg-white/10 backdrop-blur-sm px-4 py-1.5 rounded-full border border-white/15">
+                    <span id="recordStatusDot" class="w-3 h-3 rounded-full bg-amber-300"></span>
+                    <span id="recordStatusText" class="text-xs sm:text-sm font-display font-medium text-sky-100">Tekan tombol merah untuk mulai membaca</span>
+                    <span id="recordTimer" class="text-sm font-mono font-bold bg-indigo-800 px-2.5 py-0.5 rounded-full text-amber-300">00:00</span>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap items-center justify-center gap-4">
+                    <button id="btnRecord" onclick="toggleRecording()" class="kid-btn relative group flex items-center gap-2.5 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-400 hover:to-pink-500 text-white font-display font-bold text-base px-7 py-4 rounded-2xl border-2 border-rose-300">
+                        <span id="recordPulse" class="hidden absolute inset-0 rounded-2xl bg-rose-500 recording-pulse -z-10"></span>
+                        <i id="recordIcon" data-lucide="mic" class="w-5 h-5"></i>
+                        <span id="recordBtnLabel">Mulai Membaca</span>
+                    </button>
+
+                    <!-- Playback & Analyze Controls (Muncul setelah selesai rekam) -->
+                    <div id="postRecordControls" class="hidden flex flex-wrap items-center justify-center gap-3">
+                        <audio id="audioPlayback" controls class="h-12 rounded-2xl bg-indigo-900/90"></audio>
+                        
+                        <button id="btnAnalyze" onclick="analyzeAudioWithAI()" class="kid-btn flex items-center gap-2 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-indigo-950 font-display font-bold text-base px-7 py-4 rounded-2xl border-2 border-amber-200">
+                            <i data-lucide="sparkles" class="w-5 h-5"></i>
+                            <span>Cek Bacaanku!</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Loading State -->
+        <section id="loadingSection" class="hidden bg-white rounded-[2rem] p-8 border-4 border-purple-200 kid-card text-center space-y-4">
+            <div class="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-amber-300 to-orange-400 text-indigo-950 flex items-center justify-center animate-bounce shadow-md border-2 border-white">
+                <i data-lucide="ear" class="w-10 h-10"></i>
+            </div>
+            <div>
+                <h3 class="font-display text-xl font-bold text-indigo-950">Guru AI Sedang Mendengarkan Suaramu... 🎧</h3>
+                <p class="text-sm text-slate-600 max-w-md mx-auto mt-1">
+                    Sebentar ya! Sedang memeriksa setiap bunyi huruf dan memberikan bintang untukmu.
+                </p>
+            </div>
+            <div class="w-56 h-3 bg-indigo-100 rounded-full mx-auto overflow-hidden p-0.5">
+                <div class="h-full bg-gradient-to-r from-sky-400 via-indigo-500 to-purple-500 rounded-full animate-pulse w-3/4"></div>
+            </div>
+        </section>
+
+        <!-- Step 3: Hasil Analisis Fonetik AI -->
+        <section id="resultSection" class="hidden space-y-6">
+            
+            <!-- Ringkasan Apresiasi & Skor -->
+            <div class="bg-white rounded-[2rem] p-5 sm:p-7 border-4 border-purple-200 kid-card">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b-2 border-dashed border-slate-200">
+                    <div>
+                        <span class="inline-flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-purple-700 bg-purple-100 px-3 py-1.5 rounded-full mb-1.5 border border-purple-200">
+                            <i data-lucide="award" class="w-3.5 h-3.5"></i> Langkah 3 • Rapor Bintang Membaca
+                        </span>
+                        <h2 class="font-display text-xl sm:text-2xl font-bold text-slate-900">Hore! Ini Hasil Membacamu 🌟</h2>
+                    </div>
+                    <div class="flex items-center gap-3.5 bg-gradient-to-r from-amber-100 to-yellow-100 px-5 py-3 rounded-3xl border-2 border-amber-300 shadow-sm">
+                        <div class="text-right">
+                            <p class="text-xs font-display font-bold text-amber-800 uppercase">Skor Ketepatan</p>
+                            <p id="accuracyScore" class="text-3xl font-display font-bold text-indigo-700">0%</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-amber-400 text-white flex items-center justify-center shadow-sm border-2 border-white animate-star">
+                            <i data-lucide="star" class="w-7 h-7 fill-current"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pesan Apresiasi & Catatan Guru Simpel dengan Animasi Menarik -->
+                <div id="praiseCardBox" class="mt-5 relative overflow-hidden bg-gradient-to-r from-emerald-400 via-teal-400 to-sky-400 p-1 rounded-3xl shadow-lg">
+                    <div class="bg-white/95 backdrop-blur-sm rounded-[1.35rem] p-4 sm:p-5 flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-300 to-orange-400 text-indigo-950 flex items-center justify-center shrink-0 shadow-md border-2 border-white animate-bounce text-2xl">
+                            🌟
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-display font-bold text-xs uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                                    Catatan Guru AI
+                                </span>
+                                <span class="text-xs text-amber-500 font-bold">✨✨✨</span>
+                            </div>
+                            <p id="praiseFeedback" class="font-display text-base sm:text-lg font-semibold text-slate-800 leading-snug"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Peta Kata Interaktif (Word-by-Word Breakdown) -->
+                <div class="mt-6">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-display text-sm sm:text-base font-bold text-slate-800">Peta Pelafalan Per Kata:</h3>
+                            <span id="analyzedWordCountBadge" class="text-xs font-display font-bold text-indigo-700 bg-indigo-100 px-3 py-1 rounded-full border border-indigo-200">0 Kata Terpetakan</span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3 text-xs font-medium">
+                            <span class="flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Tepat</span>
+                            <span class="flex items-center gap-1.5 bg-sky-50 px-2.5 py-1 rounded-full border border-sky-200"><span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span> Mengeja (Wajar)</span>
+                            <span class="flex items-center gap-1.5 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-200"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Keliru Bunyi</span>
+                            <span class="flex items-center gap-1.5 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Tambahan / Terlewat</span>
+                        </div>
+                    </div>
+                    
+                    <div id="wordBreakdownContainer" class="flex flex-wrap gap-2.5 p-4 bg-sky-50/60 rounded-3xl border-2 border-sky-200/80 min-h-[80px] max-h-[420px] overflow-y-auto items-center">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grid Detail: Kesalahan Fonetik Spesifik & Observasi Tambahan/Pernapasan -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Kolom Kiri: Analisis Kesalahan Bunyi (Diftong, Digraf, Klaster, Paragog, Silabisasi, Substitusi) -->
+                <div class="bg-white rounded-[2rem] p-5 sm:p-6 border-4 border-rose-200 kid-card flex flex-col">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-11 h-11 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center border border-rose-200">
+                            <i data-lucide="sparkles" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-display font-bold text-lg text-slate-900">Yuk Perbaiki Bunyi Ini 🎯</h3>
+                            <p class="text-xs text-slate-500">Deteksi Diftong, Digraf, Klaster, Paragog, Silabisasi & Substitusi</p>
+                        </div>
+                    </div>
+
+                    <div id="phoneticErrorsList" class="space-y-3 flex-1">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+
+                <!-- Kolom Kanan: Sensitivitas Pernapasan, Mengeja & Penambahan Kata -->
+                <div class="bg-white rounded-[2rem] p-5 sm:p-6 border-4 border-sky-200 kid-card flex flex-col space-y-5">
+                    <div>
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-11 h-11 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center border border-sky-200">
+                                <i data-lucide="wind" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-display font-bold text-lg text-slate-900">Catatan Mengeja & Napas 🎈</h3>
+                                <p class="text-xs text-slate-500">Pemantauan ramah proses belajar membaca anak</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <!-- Proses Mengeja -->
+                            <div class="p-3.5 rounded-2xl bg-sky-50 border-2 border-sky-200/80">
+                                <p class="font-display text-xs font-bold text-sky-900 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                                    <i data-lucide="spell-check" class="w-4 h-4 text-sky-600"></i> Proses Mengeja (Tidak Disalahkan)
+                                </p>
+                                <p id="spellingObservation" class="text-sm text-sky-950 leading-relaxed"></p>
+                            </div>
+
+                            <!-- Pernapasan & Jeda -->
+                            <div class="p-3.5 rounded-2xl bg-indigo-50 border-2 border-indigo-200/80">
+                                <p class="font-display text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                                    <i data-lucide="activity" class="w-4 h-4 text-indigo-600"></i> Jeda Pernapasan & Kelancaran
+                                </p>
+                                <p id="breathingObservation" class="text-sm text-indigo-950 leading-relaxed"></p>
+                            </div>
+
+                            <!-- Penambahan / Penghilangan Kata -->
+                            <div class="p-3.5 rounded-2xl bg-amber-50 border-2 border-amber-200/80">
+                                <p class="font-display text-xs font-bold text-amber-900 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                                    <i data-lucide="plus-circle" class="w-4 h-4 text-amber-600"></i> Penambahan / Sisipan Kata
+                                </p>
+                                <p id="insertionObservation" class="text-sm text-amber-950 leading-relaxed"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal Panduan Fonetik Bahasa Indonesia untuk SD -->
+    <div id="guideModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                        <i data-lucide="book-open" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-slate-900">Referensi Kesalahan Pelafalan Anak SD</h3>
+                </div>
+                <button onclick="toggleGuideModal()" class="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="p-5 sm:p-6 overflow-y-auto space-y-5 text-sm text-slate-700">
+                <p class="leading-relaxed">
+                    Dalam pembelajaran membaca permulaan di Sekolah Dasar, anak sering mengalami tantangan pada gabungan huruf yang memiliki aturan bunyi khusus dalam Bahasa Indonesia:
+                </p>
+
+                <div class="space-y-3">
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                        <h4 class="font-bold text-indigo-700 mb-1">5. Alofoni Vokal (e-pepet vs e-taling / eu) & Digraf (ny → y)</h4>
+                        <p class="text-xs text-slate-600 mb-2">Bahasa Indonesia memiliki variasi bunyi huruf <em>e</em> yang berbeda (e-pepet seperti pada <em>emas</em> vs e-taling seperti pada <em>bebek/meja</em>) yang sering tertukar oleh anak SD.</p>
+                        <ul class="list-disc list-inside text-xs space-y-1 text-slate-700">
+                            <li><strong>Tertukarnya Vokal <em>e-pepet [ə]</em> dengan <em>e-taling [é/è]</em> atau <em>eu [ɤ]</em>:</strong> Kata berbunyi <em>e-pepet</em> (netral/singkat) seperti <strong>keluar, kemana, kelas, beli, pergi, teman, empat, sekolah</strong> sering keliru diucapkan menggunakan bunyi <em>e-taling</em> keras (seperti bunyi <em>e</em> pada kata <em>bebek/meja</em> → <em>"kéluar", "kémana", "béli"</em>) atau bunyi <em>eu</em> (<em>"keuluar", "keumana"</em>), maupun sebaliknya.</li>
+                            <li><strong>Peluluhan Digraf <em>ny-</em> menjadi <em>y-</em>:</strong> Kata seperti <strong>nyaman, nyamuk, nyanyi</strong> sering kehilangan bunyi sengau <em>n</em> sehingga terbaca <em>"yaman", "yamuk", "yani"</em>.</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                        <h4 class="font-bold text-indigo-700 mb-1">6. Kesalahan Silabisasi & Substitusi Fonem</h4>
+                        <p class="text-xs text-slate-600 mb-2">Pemenggalan suku kata yang memecah digraf/diftong atau penggantian bunyi konsonan.</p>
+                        <ul class="list-disc list-inside text-xs space-y-1 text-slate-700">
+                            <li><strong>Silabisasi:</strong> <em>"mengajar"</em> dipenggal <em>"men-ga-jar"</em> (seharusnya <em>me-nga-jar</em>), <em>"menyapu"</em> dipenggal <em>"men-ya-pu"</em> (seharusnya <em>me-nya-pu</em>).</li>
+                            <li><strong>Substitusi:</strong> <em>f/v → p</em> (<em>foto → poto</em>, <em>aktif → aktip</em>), <em>z → j</em> (<em>Zaki → Jaki</em>), <em>r → l</em> (<em>rapi → lapi</em>).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+                <button onclick="toggleGuideModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition">
+                    Mengerti
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Inisialisasi ikon Lucide
+        lucide.createIcons();
+
+        // ==========================================
+        // SISTEM SOUND EFFECT & MUSIK CERIA (TONE.JS)
+        // ==========================================
+        let sfxEnabled = true;
+        let clickSynth = null;
+        let melodySynth = null;
+
+        async function initAudioEngine() {
+            if (typeof Tone === 'undefined') return;
+            if (Tone.context.state !== 'running') {
+                await Tone.start();
+            }
+            if (!clickSynth) {
+                clickSynth = new Tone.Synth({
+                    oscillator: { type: 'sine' },
+                    envelope: { attack: 0.005, decay: 0.08, sustain: 0.02, release: 0.08 }
+                }).toDestination();
+                clickSynth.volume.value = -10;
+            }
+            if (!melodySynth) {
+                melodySynth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: 'triangle' },
+                    envelope: { attack: 0.02, decay: 0.25, sustain: 0.15, release: 0.4 }
+                }).toDestination();
+                melodySynth.volume.value = -8;
+            }
+        }
+
+        // Bunyi klik ceria seperti gelembung/xilofon saat tombol atau elemen diklik
+        async function playClickSound(pitch = 'C5') {
+            if (!sfxEnabled) return;
+            try {
+                await initAudioEngine();
+                if (clickSynth) {
+                    clickSynth.triggerAttackRelease(pitch, '32n');
+                }
+            } catch (e) {
+                // Abaikan jika audio context belum diizinkan
+            }
+        }
+
+        // Bunyi sinyal rekam mulai & berhenti
+        async function playRecordSound(isStart = true) {
+            if (!sfxEnabled) return;
+            try {
+                await initAudioEngine();
+                if (melodySynth) {
+                    const now = Tone.now();
+                    if (isStart) {
+                        melodySynth.triggerAttackRelease('C5', '16n', now);
+                        melodySynth.triggerAttackRelease('G5', '16n', now + 0.1);
+                    } else {
+                        melodySynth.triggerAttackRelease('G5', '16n', now);
+                        melodySynth.triggerAttackRelease('C5', '16n', now + 0.1);
+                    }
+                }
+            } catch (e) {}
+        }
+
+        // Musik ceria (fanfare ramah anak) saat hasil deteksi muncul
+        async function playCheerfulResultMusic() {
+            if (!sfxEnabled) return;
+            try {
+                await initAudioEngine();
+                if (melodySynth) {
+                    const now = Tone.now();
+                    // Melodi ceria berirama riang (C Mayor Pentatonik + Akor penutup hangat)
+                    const notes = [
+                        { note: ['C5'], dur: '16n', time: 0 },
+                        { note: ['E5'], dur: '16n', time: 0.12 },
+                        { note: ['G5'], dur: '16n', time: 0.24 },
+                        { note: ['C6'], dur: '8n',  time: 0.36 },
+                        { note: ['A5'], dur: '16n', time: 0.54 },
+                        { note: ['G5'], dur: '8n',  time: 0.66 },
+                        { note: ['E5', 'G5', 'C6'], dur: '4n', time: 0.85 }
+                    ];
+                    notes.forEach(n => {
+                        melodySynth.triggerAttackRelease(n.note, n.dur, now + n.time);
+                    });
+                }
+            } catch (e) {}
+        }
+
+        // Toggle aktif/nonaktif sound effect
+        function toggleSoundEffects() {
+            sfxEnabled = !sfxEnabled;
+            const icon = document.getElementById('sfxIcon');
+            const btn = document.getElementById('btnToggleSfx');
+            if (sfxEnabled) {
+                icon.setAttribute('data-lucide', 'volume-2');
+                btn.classList.remove('opacity-60');
+                playClickSound('E5');
+            } else {
+                icon.setAttribute('data-lucide', 'volume-x');
+                btn.classList.add('opacity-60');
+            }
+            lucide.createIcons();
+        }
+
+        // Pasang listener global untuk efek suara setiap kali tombol diklik
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (btn && btn.id !== 'btnToggleSfx' && btn.id !== 'btnRecord') {
+                const pitches = ['C5', 'D5', 'E5', 'G5'];
+                const randomPitch = pitches[Math.floor(Math.random() * pitches.length)];
+                playClickSound(randomPitch);
+            }
+        });
+
+        // Data Modul Bacaan SD (Rujukan kata-kata yang sering keliru diucapkan anak SD)
+        const PRESET_MODULES = {
+            diftong: {
+                title: "Fokus Diftong (ai, au, oi, ei):",
+                desc: "Kata-kata seperti 'pantai', 'harimau', 'kerbau', 'amboi', dan 'survei' sering dilafalkan menjadi vokal tunggal ('pante', 'harimo') oleh anak SD.",
+                text: "Adik melihat harimau dan kerbau di tepi pantai sambil berseru amboi saat mengikuti survei alam."
+            },
+            digraf: {
+                title: "Fokus Digraf (ng, ny, kh, sy):",
+                desc: "Menguji bunyi sengau dan geseran seperti 'nyamuk', 'menyanyi', 'khusus', 'syarat', dan 'bunga' agar tidak terpisah atau berubah menjadi 'n' / 'k' / 's'.",
+                text: "Syarif menyanyi dengan khusyuk di dekat bunga melati tanpa takut digigit nyamuk malam."
+            },
+            klaster: {
+                title: "Fokus Klaster / Gugus Konsonan (str, pr, kr, tr, sw):",
+                desc: "Anak SD sering menyisipkan bunyi 'e' (epentesis) pada gugus konsonan, misalnya 'struktur' dibaca 'setruktur' atau 'prakarya' dibaca 'perakarya'.",
+                text: "Siswa kreatif itu membuat struktur traktor dari prakarya kardus dengan penuh prestasi."
+            },
+            paragog_substitusi: {
+                title: "Fokus Paragog (-h), Glotal Akhir (-k), Alofoni Vokal e & Digraf ny-:",
+                desc: "Menguji sensitivitas pada tambahan -h ('saya'→'sayah', 'itu'→'ituh'), pelafalan -k akhir yang harus glotal lembut ('kakek'→'kake', 'nenek'→'nene', 'kakak'→'kaka'), ketepatan bunyi e-pepet vs e-taling/eu ('keluar', 'kemana'), serta digraf ny- ('nyaman'≠'yaman').",
+                text: "Saya dan kakak keluar rumah kemana saja dengan nyaman untuk menemui kakek dan nenek di taman itu."
+            },
+            cerita_panjang: {
+                title: "Tantangan Cerita Panjang (100+ Kata - Evaluasi Menyeluruh):",
+                desc: "Bacaan panjang lebih dari 100 kata untuk menguji konsistensi pelafalan diftong, digraf, klaster, paragog, silabisasi, substitusi, serta ketahanan pernapasan anak SD.",
+                text: "Pada pagi hari yang cerah di tepi pantai, Ksatria dan Syifa berangkat mengikuti survei lingkungan sekolah bersama guru mereka. Di sepanjang jalan berpasir, mereka melihat kerbau sedang berteduh di bawah pohon rindang dan mendengar cerita tentang harimau Sumatera yang dilindungi. Syifa sangat kreatif mencatat struktur tanaman bakau sambil membawa prakarya dari bahan daur ulang. Sesekali angin berembus sepoi-sepoi membuat mereka berseru amboi karena pemandangan laut sangat indah. Sebelum pulang, Zaki membantu menyapu sampah plastik dan memotret kegiatan favorit itu dengan kamera khusus. Semua siswa merasa bangga karena berhasil menyelesaikan tugas kelompok dengan aktif, tertib, dan penuh prestasi."
+            }
+        };
+
+        // State Perekaman Audio
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordedBlob = null;
+        let recordedMimeType = 'audio/webm';
+        let isRecording = false;
+        let timerInterval = null;
+        let secondsElapsed = 0;
+
+        // State Visualizer
+        let audioContext = null;
+        let analyser = null;
+        let dataArray = null;
+        let animationId = null;
+
+        // Inisialisasi saat halaman dimuat
+        window.addEventListener('DOMContentLoaded', () => {
+            selectPreset('diftong');
+            drawIdleVisualizer();
+        });
+
+        // Hitung jumlah kata secara real-time
+        function updateWordCount() {
+            const text = document.getElementById('targetText').value.trim();
+            const count = text ? text.split(/\s+/).length : 0;
+            const badge = document.getElementById('wordCountBadge');
+            if (badge) {
+                badge.textContent = `${count} Kata`;
+            }
+        }
+
+        // Fungsi memilih preset bacaan
+        function selectPreset(key) {
+            const module = PRESET_MODULES[key];
+            if (!module) return;
+
+            document.getElementById('moduleTitle').textContent = module.title;
+            document.getElementById('moduleDesc').textContent = module.desc;
+            document.getElementById('targetText').value = module.text;
+            updateWordCount();
+
+            // Update styling tombol preset
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-700');
+                btn.classList.add('bg-white', 'text-slate-700', 'border-slate-200');
+            });
+            const activeBtn = document.getElementById(`btn-${key}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-white', 'text-slate-700', 'border-slate-200');
+                activeBtn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-700');
+            }
+        }
+
+        // Fungsi Text-to-Speech Bawaan Browser untuk Contoh Pelafalan
+        function speakTargetText() {
+            const text = document.getElementById('targetText').value.trim();
+            if (!text) {
+                showAlert("Silakan isi teks bacaan terlebih dahulu.", "warning");
+                return;
+            }
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'id-ID';
+                utterance.rate = 0.85; // Sedikit lebih lambat agar jelas untuk anak SD
+                window.speechSynthesis.speak(utterance);
+            } else {
+                showAlert("Browser Anda tidak mendukung fitur suara contoh.", "warning");
+            }
+        }
+
+        // Toggle Modal Panduan
+        function toggleGuideModal() {
+            const modal = document.getElementById('guideModal');
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            } else {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        // Sistem Alert UI
+        function showAlert(message, type = "error") {
+            const box = document.getElementById('alertBox');
+            const msgEl = document.getElementById('alertMessage');
+            const iconEl = document.getElementById('alertIcon');
+
+            box.className = "rounded-2xl p-4 border flex items-start gap-3 transition-all mb-4";
+            if (type === "error") {
+                box.classList.add("bg-rose-50", "border-rose-200", "text-rose-800");
+                iconEl.setAttribute("data-lucide", "alert-circle");
+            } else if (type === "warning") {
+                box.classList.add("bg-amber-50", "border-amber-200", "text-amber-800");
+                iconEl.setAttribute("data-lucide", "alert-triangle");
+            } else {
+                box.classList.add("bg-emerald-50", "border-emerald-200", "text-emerald-800");
+                iconEl.setAttribute("data-lucide", "check-circle-2");
+            }
+            msgEl.textContent = message;
+            box.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function hideAlert() {
+            document.getElementById('alertBox').classList.add('hidden');
+        }
+
+        // Toggle Rekam Suara
+        async function toggleRecording() {
+            if (!isRecording) {
+                await startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+
+        // Mulai Merekam
+        async function startRecording() {
+            hideAlert();
+            const targetText = document.getElementById('targetText').value.trim();
+            if (!targetText) {
+                showAlert("Harap masukkan teks bacaan terlebih dahulu sebelum mulai merekam.", "warning");
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: false, // Dimatikan agar suara napas dan desis konsonan tetap tertangkap sensitif
+                        autoGainControl: true
+                    }
+                });
+
+                // Pilih mimeType yang didukung
+                const mimeTypes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'];
+                recordedMimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type)) || '';
+
+                mediaRecorder = recordedMimeType ? new MediaRecorder(stream, { mimeType: recordedMimeType }) : new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    recordedBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+                    const audioUrl = URL.createObjectURL(recordedBlob);
+                    const audioPlayer = document.getElementById('audioPlayback');
+                    audioPlayer.src = audioUrl;
+
+                    document.getElementById('postRecordControls').classList.remove('hidden');
+                    document.getElementById('postRecordControls').classList.add('flex');
+
+                    // Hentikan track mikrofon
+                    stream.getTracks().forEach(track => track.stop());
+                    stopVisualizer();
+                };
+
+                mediaRecorder.start(100);
+                isRecording = true;
+                playRecordSound(true);
+
+                // Update UI Merekam
+                document.getElementById('postRecordControls').classList.add('hidden');
+                document.getElementById('resultSection').classList.add('hidden');
+                document.getElementById('recordPulse').classList.remove('hidden');
+                document.getElementById('recordBtnLabel').textContent = "Selesai Membaca";
+                document.getElementById('recordIcon').setAttribute('data-lucide', 'square');
+                document.getElementById('recordStatusDot').className = "w-3 h-3 rounded-full bg-rose-500 animate-ping";
+                document.getElementById('recordStatusText').textContent = "Mendengarkan suara anak...";
+                lucide.createIcons();
+
+                // Timer
+                secondsElapsed = 0;
+                updateTimerDisplay();
+                timerInterval = setInterval(() => {
+                    secondsElapsed++;
+                    updateTimerDisplay();
+                }, 1000);
+
+                // Jalankan Visualizer Gelombang Suara
+                startVisualizer(stream);
+
+            } catch (err) {
+                console.error("Microphone error:", err);
+                showAlert("Tidak dapat mengakses mikrofon. Pastikan izin mikrofon telah diberikan di browser Anda.", "error");
+            }
+        }
+
+        // Berhenti Merekam
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                playRecordSound(false);
+                clearInterval(timerInterval);
+
+                document.getElementById('recordPulse').classList.add('hidden');
+                document.getElementById('recordBtnLabel').textContent = "Rekam Ulang";
+                document.getElementById('recordIcon').setAttribute('data-lucide', 'rotate-ccw');
+                document.getElementById('recordStatusDot').className = "w-3 h-3 rounded-full bg-emerald-500";
+                document.getElementById('recordStatusText').textContent = "Rekaman siap diperiksa AI";
+                lucide.createIcons();
+            }
+        }
+
+        function updateTimerDisplay() {
+            const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+            const secs = String(secondsElapsed % 60).padStart(2, '0');
+            document.getElementById('recordTimer').textContent = `${mins}:${secs}`;
+        }
+
+        // Visualizer Canvas
+        function startVisualizer(stream) {
+            const canvas = document.getElementById('audioVisualizer');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioContext.createMediaStreamSource(stream);
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 128;
+            source.connect(analyser);
+
+            const bufferLength = analyser.frequencyBinCount;
+            dataArray = new Uint8Array(bufferLength);
+
+            const barColors = [
+                ['#f472b6', '#fb7185'], // Pink ceria
+                ['#fbbf24', '#f59e0b'], // Kuning bintang
+                ['#34d399', '#10b981'], // Hijau mint
+                ['#38bdf8', '#6366f1']  // Biru langit
+            ];
+
+            function draw() {
+                animationId = requestAnimationFrame(draw);
+                analyser.getByteFrequencyData(dataArray);
+
+                ctx.fillStyle = '#1e1b4b';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                const barWidth = (canvas.width / bufferLength) * 1.9;
+                let barHeight;
+                let x = 6;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    barHeight = Math.max(8, (dataArray[i] / 255) * canvas.height * 0.85);
+                    const palette = barColors[i % barColors.length];
+                    const gradient = ctx.createLinearGradient(0, canvas.height - barHeight, 0, canvas.height);
+                    gradient.addColorStop(0, palette[0]);
+                    gradient.addColorStop(1, palette[1]);
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.roundRect(x, (canvas.height - barHeight) / 2, Math.max(4, barWidth - 3), barHeight, 8);
+                    ctx.fill();
+
+                    x += barWidth;
+                }
+            }
+            draw();
+        }
+
+        function stopVisualizer() {
+            if (animationId) cancelAnimationFrame(animationId);
+            if (audioContext && audioContext.state !== 'closed') {
+                audioContext.close();
+            }
+            drawIdleVisualizer();
+        }
+
+        function drawIdleVisualizer() {
+            const canvas = document.getElementById('audioVisualizer');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth || 600;
+            canvas.height = canvas.offsetHeight || 96;
+
+            ctx.fillStyle = '#1e1b4b';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Gambar gelembung gelombang ceria saat diam
+            const dotColors = ['#f472b6', '#fbbf24', '#34d399', '#38bdf8', '#a78bfa'];
+            const spacing = 22;
+            const count = Math.floor((canvas.width - 32) / spacing);
+            for (let i = 0; i < count; i++) {
+                const cx = 20 + i * spacing;
+                const cy = canvas.height / 2 + Math.sin(i * 0.6) * 8;
+                ctx.fillStyle = dotColors[i % dotColors.length];
+                ctx.beginPath();
+                ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Konversi Blob Audio ke string Base64
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const dataUrl = reader.result;
+                    const base64String = dataUrl.split(',')[1];
+                    resolve(base64String);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        // Fetch API dengan Exponential Backoff Retry
+        async function fetchWithBackoff(url, options, maxRetries = 4) {
+            const delays = [1000, 2000, 4000, 8000];
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        const errBody = await response.text();
+                        throw new Error(`HTTP ${response.status}: ${errBody}`);
+                    }
+                    return await response.json();
+                } catch (err) {
+                    if (attempt === maxRetries) throw err;
+                    await new Promise(res => setTimeout(res, delays[attempt]));
+                }
+            }
+        }
+
+        // Kirim Audio & Teks ke Gemini API untuk Analisis Fonetik Mendalam
+        async function analyzeAudioWithAI() {
+            const targetText = document.getElementById('targetText').value.trim();
+            if (!targetText) {
+                showAlert("Teks bacaan tidak boleh kosong.", "warning");
+                return;
+            }
+            if (!recordedBlob) {
+                showAlert("Silakan rekam suara anak terlebih dahulu.", "warning");
+                return;
+            }
+
+            // UI Loading
+            hideAlert();
+            document.getElementById('resultSection').classList.add('hidden');
+            document.getElementById('loadingSection').classList.remove('hidden');
+            document.getElementById('btnAnalyze').disabled = true;
+
+            try {
+                const base64Audio = await blobToBase64(recordedBlob);
+                const cleanMimeType = (recordedBlob.type || 'audio/webm').split(';')[0];
+                const wordsList = targetText.split(/\s+/);
+                const wordCount = wordsList.length;
+                const numberedWordsReference = wordsList.map((w, idx) => `${idx + 1}. ${w}`).join(' | ');
+
+                const systemInstruction = `Anda adalah Pakar Fonetik Akustik, Fonologi Bahasa Indonesia, dan Guru Membaca Sekolah Dasar (SD) dengan pendengaran sangat tajam terhadap variasi dialek lokal di Indonesia (termasuk dialek Sunda, Jawa, Betawi, dll.).
+Tugas Anda adalah menyimak rekaman audio suara anak SD secara mikro-fonetik dari awal hingga akhir (mendukung bacaan pendek maupun panjang 100+ kata) dan mendeteksi kesalahan bunyi sekecil apa pun.
+
+ATURAN KELENGKAPAN DATA PER KATA (SANGAT KRUSIAL - DILARANG MENYINGKAT):
+- Array "wordsAnalysis" WAJIB berisi SEMUA ${wordCount} kata dari teks bacaan secara lengkap berurutan dari kata ke-1 sampai kata ke-${wordCount} (ditambah kata sisipan jika anak menambah kata di luar teks).
+- JANGAN PERNAH memotong, merangkum, atau hanya menampilkan sebagian kata! Setiap satu kata pada teks target harus memiliki 1 objek tersendiri di "wordsAnalysis".
+- Agar seluruh ${wordCount}+ kata muat dengan sempurna tanpa terpotong:
+  * Untuk kata berstatus "correct" (sudah dibaca tepat), isi "explanation" secara ringkas (maksimal 3-5 kata, contoh: "Pelafalan sudah tepat.").
+  * Untuk kata berstatus "phonetic_error", "spelled_correctly", atau "inserted_or_skipped", berikan penjelasan detail dan jelas!
+
+PRINSIP EVALUASI WAJIB:
+1. JANGAN MENYALAHKAN PROSES MENGEJA YANG BENAR: Jika anak mengeja suku kata secara wajar (misal: "ka-kek... kake'") dan bunyi kata utuh akhirnya tepat sesuai kaidah Bahasa Indonesia baku, beri status "spelled_correctly" dan apresiasi usahanya.
+
+2. DETEKSI MIKRO-FONETIK SANGAT SENSITIF (WAJIB DIPERIKSA PADA SETIAP KATA YANG RELEVAN):
+   a) PARAGOG HEMBUSAN (-h) DI AKHIR VOKAL TERBUKA:
+      - Periksa SEMUA kata berakhiran vokal (-a, -i, -u, -e, -o). Anak sering menambahkan desis/hembusan '-h' di ujung kata!
+      - Contoh wajib deteksi: "saya" terbaca "sayah", "itu" terbaca "ituh", "ini" terbaca "inih", "apa" terbaca "apah", "beli" terbaca "belih", "mata" terbaca "matah", "bawa" terbaca "bawah", dan kata-kata sejenis lainnya. Jika terdengar akhiran -h yang tidak ada pada teks, TANDAI SEBAGAI "phonetic_error" (Paragog -h).
+   b) PELAFALAN KODA KONSONAN (-k) DI AKHIR KATA (GLOTAL STOP [ʔ] vs LETUP VELAR [k]):
+      - ATURAN BAKU BAHASA INDONESIA: Huruf 'k' pada posisi koda akhir kata (seperti pada kata: "kakek", "nenek", "kakak", "adik", "bapak", "anak", "bebek", "kotak", "masuk", "duduk", "enak") WAJIB dilafalkan sebagai HENTIAN GLOTAL LEMBUT / HAMZAH [ʔ] (terdengar seperti "kake'", "nene'", "kaka'", "adi'", "bapa'"), BUKAN dilafalkan dengan bunyi konsonan 'k' yang meletup keras/tebal di pangkal tenggorokan ("kakek-k", "nenek-k", "kakak-k")!
+      - Dengarkan bagian paling ujung dari setiap kata berakhiran huruf '-k'. Jika anak membunyikan huruf '-k' di akhir kata secara jelas/meletup/tebal (seperti membaca huruf k di awal kata), TANDAI SEBAGAI "phonetic_error" (Alofon Koda -k / Letupan -k Berlebih) dan jelaskan bahwa dalam Bahasa Indonesia huruf -k di akhir kata tersebut seharusnya dibaca glotal lembut ("kake", "nene", "kaka") tanpa bunyi letupan 'k' keras!
+   c) ALOFONI / DISTORSI VOKAL 'e' (TERTUKARNYA e-PEPET [ə], e-TALING [ɛ/e], DAN eu [ɤ]):
+      - Bahasa Indonesia membedakan 3 bunyi huruf 'e' secara ketat:
+        1. e-pepet [ə] (bunyi vokal tengah netral, singkat, mulut rileks seperti pada kata "emas", "ke", "se-"): WAJIB dipakai pada kata "keluar", "kemana", "kelas", "beli", "pergi", "teman", "empat", "sekolah", "seperti", "mengajar", "bersama", "ke-", "se-".
+        2. e-taling [ɛ] / [e] (bunyi vokal depan seperti pada kata "bebek", "meja", "sore", "enak", "merah", "kakek", "nenek").
+        3. Vokal dialek 'eu' [ɤ] (vokal belakang tak bulat khas Sunda).
+      - KESALAHAN WAJIB DETEKSI: Anak SD sangat sering membaca huruf 'e' pada kata "keluar", "kemana", "kelas", "beli", "pergi", "ke-", "se-" menggunakan bunyi e-taling (terdengar seperti "kéluar", "kémana", "béli" — menyamakan bunyi 'e'-nya dengan kata "bebek" atau "meja") ATAU menggunakan bunyi 'eu' ("keuluar", "keumana", "beuli"), maupun sebaliknya (membaca kata e-taling seperti "bebek", "meja", "enak" menjadi e-pepet).
+      - Dengarkan kualitas vokal setiap huruf 'e' pada rekaman! Jika bunyi 'e-pepet' [ə] berubah menjadi 'e-taling' [é/è] atau 'eu' [ɤ] (atau sebaliknya), TANDAI SEBAGAI "phonetic_error" dengan kategori "Alofoni Vokal e (e-pepet vs e-taling/eu)" dan jelaskan perbedaan bunyinya secara jelas!
+   d) PELULUHAN / AFERESIS DIGRAF 'ny-' MENJADI 'y-':
+      - Periksa SEMUA kata yang mengandung digraf 'ny' di awal maupun tengah kata (seperti: "nyaman", "nyamuk", "nyanyi", "nyala", "nyata", "menyapu", "menyanyi", "menyayangi").
+      - Anak sering menghilangkan artikulasi sengau nasal 'n' sehingga 'ny' hanya terdengar sebagai semivokal 'y' murni ("nyaman" → "yaman", "nyamuk" → "yamuk", "nyanyi" → "yani", "menyapu" → "meyapu"). Dengarkan apakah ada getaran sengau hidung (nasal palatal [ɲ]); jika hanya terdengar 'y' biasa, TANDAI SEBAGAI "phonetic_error" (Peluluhan Digraf ny → y).
+   e) DIFTONG (ai, au, oi, ei):
+      - Deteksi jika dilafalkan menjadi vokal tunggal/monoftong (misal: "pantai" → "pante", "harimau" → "harimo", "kerbau" → "kerbo", "survei" → "surve").
+   f) DIGRAF LAINNYA (ng, kh, sy) & KLASTER (str-, pr-, kr-, tr-, br-, ks-, sw-):
+      - Deteksi perubahan bunyi digraf ("khusus" → "kusus", "syarat" → "sarat", "bunga" → "buna") dan penyisipan vokal 'e' (epentesis) pada klaster ("struktur" → "setruktur", "prakarya" → "perakarya", "kreatif" → "kereatif").
+   g) KESALAHAN SILABISASI & SUBSTITUSI FONEM:
+      - Silabisasi keliru: pemenggalan suku kata yang memecah digraf/diftong (misal: "mengajar" dipenggal "men-ga-jar" bukan "me-nga-jar"; "menyapu" dipenggal "men-ya-pu" bukan "me-nya-pu").
+      - Substitusi: penggantian huruf (misal: f/v → p seperti "foto" → "poto", "aktif" → "aktip"; z → j/s seperti "Zaki" → "Jaki"; r → l seperti "rapi" → "lapi").
+
+3. SENSITIVITAS TINGGI PADA PERNAPASAN & PENAMBAHAN KATA:
+   - Catat tarikan napas berat, jeda napas di tengah kata, penambahan kata/gumaman ("eh", "ee", "dan"), pengulangan, atau kata terlewat di seluruh teks (termasuk teks panjang 100+ kata).`;
+
+                const userPrompt = `Teks bacaan target terdiri dari ${wordCount} kata:
+"${targetText}"
+
+Daftar indeks semua ${wordCount} kata yang WAJIB Anda analisis satu per satu tanpa ada satu pun yang terlewat di array wordsAnalysis:
+${numberedWordsReference}
+
+Dengarkan rekaman audio suara anak berikut dengan ketelitian akustik tingkat tinggi dari kata ke-1 hingga kata ke-${wordCount}.
+Perhatikan secara khusus:
+1. WAJIB petakan SEMUA ${wordCount} kata di atas dalam "wordsAnalysis" secara lengkap dari awal sampai akhir (jika ada kata yang terlewat dibaca anak, tandai status "inserted_or_skipped" dengan heardAs "(terlewat)"; jika ada kata tambahan yang diucapkan anak, sisipkan di posisinya dengan status "inserted_or_skipped").
+2. Periksa tambahan hembusan '-h' di akhir kata vokal (misal: "saya" → "sayah", "itu" → "ituh", dan kata sejenis).
+3. Periksa huruf '-k' di akhir kata (misal: "kakek", "nenek", "kakak", "adik", "anak", dll.) apakah dibaca meletup/keras ("kakek-k") padahal seharusnya glotal lembut ("kake", "nene", "kaka").
+4. Periksa bunyi huruf 'e' apakah diucapkan dengan alofon yang tepat — misalnya vokal e-pepet [ə] pada kata "keluar", "kemana", "kelas", "beli", "pergi" tidak tertukar menjadi bunyi e-taling [é/è] (seperti pada kata "bebek/meja") ataupun bunyi 'eu' ("keuluar"/"keumana").
+5. Periksa digraf 'ny' (misal: "nyaman", "nyamuk", "nyanyi", dll.) apakah luluh menjadi bunyi 'y' biasa ("yaman") tanpa sengau hidung.
+6. Serta periksa semua diftong, digraf, klaster, silabisasi, substitusi, proses mengeja, pernapasan, dan penambahan kata.`;
+
+                const payload = {
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [
+                                { text: userPrompt },
+                                {
+                                    inlineData: {
+                                        mimeType: cleanMimeType,
+                                        data: base64Audio
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    systemInstruction: {
+                        parts: [{ text: systemInstruction }]
+                    },
+                    generationConfig: {
+                        maxOutputTokens: 65536,
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                accuracyScore: {
+                                    type: "INTEGER",
+                                    description: "Skor ketepatan bunyi pengucapan 0-100 (mengeja yang berakhir benar tidak mengurangi skor)."
+                                },
+                                praiseFeedback: {
+                                    type: "STRING",
+                                    description: "Pesan apresiasi & catatan guru yang SANGAT SIMPEL, singkat (maksimal 2 kalimat pendek), hangat, dan mudah dibaca anak SD."
+                                },
+                                wordsAnalysis: {
+                                    type: "ARRAY",
+                                    description: `WAJIB berisi seluruh ${wordCount} kata dari teks bacaan secara lengkap dari awal sampai akhir tanpa disingkat, ditambah kata sisipan jika ada.`,
+                                    items: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            word: { type: "STRING", description: "Kata pada teks atau kata tambahan yang diucapkan." },
+                                            status: {
+                                                type: "STRING",
+                                                enum: ["correct", "spelled_correctly", "phonetic_error", "inserted_or_skipped"],
+                                                description: "Status pelafalan kata."
+                                            },
+                                            phoneticCategory: {
+                                                type: "STRING",
+                                                description: "Kategori fonetik: Diftong, Digraf, Klaster, Paragog, Alofoni e, Silabisasi, Substitusi, Mengeja, Tambahan, Terlewat, atau Umum."
+                                            },
+                                            heardAs: {
+                                                type: "STRING",
+                                                description: "Transkripsi bunyi yang terdengar diucapkan anak."
+                                            },
+                                            explanation: {
+                                                type: "STRING",
+                                                description: "Penjelasan detail bagian mana yang keliru (untuk kata tepat cukup singkat: 'Pelafalan sudah tepat')."
+                                            }
+                                        },
+                                        required: ["word", "status", "phoneticCategory", "heardAs", "explanation"]
+                                    }
+                                },
+                                phoneticErrorsDetail: {
+                                    type: "ARRAY",
+                                    description: "Daftar khusus kata-kata yang mengalami kesalahan bunyi pengucapan (diftong, digraf, klaster, paragog, silabisasi, substitusi).",
+                                    items: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            targetWord: { type: "STRING" },
+                                            errorType: { type: "STRING", description: "Misal: Paragog (Penambahan Akhir), Kesalahan Silabisasi, Substitusi (f → p), Kesalahan Diftong (ai), Kesalahan Digraf (ny), Kesalahan Klaster (str)." },
+                                            wrongPart: { type: "STRING", description: "Bagian huruf/suku kata spesifik yang keliru." },
+                                            pronouncedAs: { type: "STRING", description: "Bunyi yang diucapkan anak." },
+                                            correctionGuide: { type: "STRING", description: "Penjelasan mudah dipahami tentang letak kesalahan dan cara pengucapan yang tepat." }
+                                        },
+                                        required: ["targetWord", "errorType", "wrongPart", "pronouncedAs", "correctionGuide"]
+                                    }
+                                },
+                                spellingObservation: {
+                                    type: "STRING",
+                                    description: "Catatan apakah anak terdengar mengeja suku kata sebelum membaca utuh, disertai penegasan bahwa hal itu wajar."
+                                },
+                                breathingObservation: {
+                                    type: "STRING",
+                                    description: "Deteksi sensitif terhadap pola pernapasan, tarikan napas di tengah kalimat/kata, atau jeda."
+                                },
+                                insertionObservation: {
+                                    type: "STRING",
+                                    description: "Deteksi sensitif terhadap penambahan kata, gumaman ('ee', 'eh'), pengulangan, atau kata yang terlewat."
+                                }
+                            },
+                            required: [
+                                "accuracyScore",
+                                "praiseFeedback",
+                                "wordsAnalysis",
+                                "phoneticErrorsDetail",
+                                "spellingObservation",
+                                "breathingObservation",
+                                "insertionObservation"
+                            ]
+                        }
+                    }
+                };
+
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                const result = await fetchWithBackoff(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const responseText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!responseText) {
+                    throw new Error("Respons AI kosong atau tidak valid.");
+                }
+
+                const analysisData = JSON.parse(responseText);
+                renderAnalysisResults(analysisData);
+
+            } catch (error) {
+                console.error("Analysis Error:", error);
+                showAlert("Terjadi kendala saat menganalisis rekaman suara. Pastikan suara terdengar jelas dan coba lagi.", "error");
+            } finally {
+                document.getElementById('loadingSection').classList.add('hidden');
+                document.getElementById('btnAnalyze').disabled = false;
+            }
+        }
+
+        // Render Hasil Analisis ke UI
+        function renderAnalysisResults(data) {
+            // Skor & Apresiasi Simpel dengan Animasi Pop-In
+            document.getElementById('accuracyScore').textContent = `${data.accuracyScore ?? 0}%`;
+            document.getElementById('praiseFeedback').textContent = data.praiseFeedback || "Hebat sekali! Kamu sudah berani membaca dengan lantang, terus semangat berlatih ya! 🌟";
+
+            const praiseCard = document.getElementById('praiseCardBox');
+            if (praiseCard) {
+                praiseCard.classList.remove('animate-praise-pop');
+                void praiseCard.offsetWidth; // Trigger reflow agar animasi selalu berputar ulang
+                praiseCard.classList.add('animate-praise-pop');
+            }
+
+            // Render Peta Kata Interaktif
+            const wordContainer = document.getElementById('wordBreakdownContainer');
+            wordContainer.innerHTML = '';
+
+            const analyzedList = Array.isArray(data.wordsAnalysis) ? data.wordsAnalysis : [];
+            const analyzedBadge = document.getElementById('analyzedWordCountBadge');
+            if (analyzedBadge) {
+                analyzedBadge.textContent = `${analyzedList.length} Kata Terpetakan`;
+            }
+
+            if (analyzedList.length > 0) {
+                analyzedList.forEach((item, index) => {
+                    const badge = document.createElement('div');
+                    let colorClasses = '';
+                    let statusLabel = '';
+
+                    switch (item.status) {
+                        case 'correct':
+                            colorClasses = 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100';
+                            statusLabel = 'Tepat';
+                            break;
+                        case 'spelled_correctly':
+                            colorClasses = 'bg-sky-50 text-sky-800 border-sky-200 hover:bg-sky-100';
+                            statusLabel = 'Mengeja (Benar)';
+                            break;
+                        case 'phonetic_error':
+                            colorClasses = 'bg-rose-50 text-rose-800 border-rose-300 ring-2 ring-rose-500/20 hover:bg-rose-100';
+                            statusLabel = 'Keliru Bunyi';
+                            break;
+                        case 'inserted_or_skipped':
+                        default:
+                            colorClasses = 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100';
+                            statusLabel = 'Tambahan/Terlewat';
+                            break;
+                    }
+
+                    badge.className = `group relative px-3 py-1.5 rounded-xl border text-sm sm:text-base font-display font-medium cursor-pointer transition ${colorClasses}`;
+                    badge.addEventListener('click', () => {
+                        playClickSound(item.status === 'phonetic_error' ? 'D4' : 'G5');
+                    });
+                    badge.innerHTML = `
+                        <span class="text-[10px] font-sans opacity-50 mr-1">${index + 1}.</span><span>${escapeHtml(item.word)}</span>
+                        ${item.status === 'phonetic_error' ? `<span class="block text-[10px] font-sans font-bold uppercase tracking-wider text-rose-600">(${escapeHtml(item.heardAs)})</span>` : ''}
+                        ${item.status === 'spelled_correctly' ? `<span class="block text-[10px] font-sans font-semibold text-sky-600">dieja ✓</span>` : ''}
+                        ${item.status === 'inserted_or_skipped' ? `<span class="block text-[10px] font-sans font-semibold text-amber-700">${escapeHtml(item.heardAs)}</span>` : ''}
+                        
+                        <!-- Tooltip Detail saat hover/tap -->
+                        <div class="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-900 text-white text-xs font-sans rounded-xl shadow-xl z-20 pointer-events-none">
+                            <div class="font-bold text-indigo-300 mb-0.5">#${index + 1} • ${escapeHtml(statusLabel)} • ${escapeHtml(item.phoneticCategory || 'Umum')}</div>
+                            <div class="text-slate-300 mb-1">Terdengar: <span class="text-white font-semibold">"${escapeHtml(item.heardAs)}"</span></div>
+                            <div class="text-slate-200 leading-relaxed">${escapeHtml(item.explanation)}</div>
+                        </div>
+                    `;
+                    wordContainer.appendChild(badge);
+                });
+            }
+
+            // Render Detail Kesalahan Bunyi Fonetik (Diftong, Digraf, Klaster)
+            const errorsList = document.getElementById('phoneticErrorsList');
+            errorsList.innerHTML = '';
+
+            if (Array.isArray(data.phoneticErrorsDetail) && data.phoneticErrorsDetail.length > 0) {
+                data.phoneticErrorsDetail.forEach(err => {
+                    const card = document.createElement('div');
+                    card.className = 'p-4 rounded-2xl bg-rose-50/70 border border-rose-200/80 space-y-2';
+                    card.innerHTML = `
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <span class="font-display text-lg font-bold text-rose-950">"${escapeHtml(err.targetWord)}"</span>
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-rose-100 text-rose-700">${escapeHtml(err.errorType)}</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-xs bg-white/80 p-2.5 rounded-xl border border-rose-100">
+                            <div>
+                                <span class="text-slate-500 block">Bagian Keliru:</span>
+                                <span class="font-bold text-rose-600 text-sm">${escapeHtml(err.wrongPart)}</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block">Terdengar Sebagai:</span>
+                                <span class="font-bold text-slate-800 text-sm">"${escapeHtml(err.pronouncedAs)}"</span>
+                            </div>
+                        </div>
+                        <p class="text-xs sm:text-sm text-rose-900 leading-relaxed">
+                            <strong class="font-semibold">Penjelasan:</strong> ${escapeHtml(err.correctionGuide)}
+                        </p>
+                    `;
+                    errorsList.appendChild(card);
+                });
+            } else {
+                errorsList.innerHTML = `
+                    <div class="p-6 rounded-2xl bg-emerald-50/60 border border-emerald-200/70 text-center space-y-2 my-auto">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+                            <i data-lucide="check-circle" class="w-6 h-6"></i>
+                        </div>
+                        <h4 class="font-bold text-emerald-950 text-sm">Tidak Ada Kesalahan Bunyi Fonetik!</h4>
+                        <p class="text-xs text-emerald-800">Pelafalan bunyi diftong, digraf, dan klaster pada bacaan ini sudah sangat tepat.</p>
+                    </div>
+                `;
+            }
+
+            // Render Observasi Mengeja, Pernapasan & Penambahan Kata
+            document.getElementById('spellingObservation').textContent = data.spellingObservation || "Anak membaca langsung tanpa mengeja terputus.";
+            document.getElementById('breathingObservation').textContent = data.breathingObservation || "Pengaturan napas dan jeda antar kata terdengar stabil.";
+            document.getElementById('insertionObservation').textContent = data.insertionObservation || "Tidak ditemukan penambahan kata atau sisipan suara di luar teks.";
+
+            // Tampilkan Section Hasil
+            const resultSection = document.getElementById('resultSection');
+            resultSection.classList.remove('hidden');
+            lucide.createIcons();
+            playCheerfulResultMusic();
+            resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Helper keamanan HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
